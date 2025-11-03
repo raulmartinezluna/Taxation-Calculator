@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Property Tax vs. Land Value Tax Calculator</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f7fafc;
+        }
+        .card {
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+            transition: all 0.3s ease;
+        }
+        .result-card {
+            border-left: 4px solid;
+            transition: transform 0.2s;
+        }
+        .result-card:hover {
+            transform: translateY(-2px);
+        }
+    </style>
+</head>
+<body class="p-4 sm:p-8 flex justify-center items-start min-h-screen">
+
+    <div class="w-full max-w-4xl">
+        <header class="text-center mb-8">
+            <h1 class="text-4xl font-extrabold text-gray-900 mb-2">Tax Comparison Calculator</h1>
+            <p class="text-lg text-gray-600">Compare Traditional Property Tax and Land Value Tax (LVT)</p>
+        </header>
+
+        <div class="card bg-white p-6 sm:p-8 rounded-xl border border-gray-200">
+            <!-- Inputs Section -->
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+                
+                <!-- Land Value Input -->
+                <div>
+                    <label for="landValue" class="block text-sm font-medium text-gray-700 mb-1">
+                        Land Value ($)
+                    </label>
+                    <input type="number" id="landValue" placeholder="e.g., 200000" min="0" value="200000"
+                           class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 text-lg">
+                </div>
+
+                <!-- Improvements Value Input -->
+                <div>
+                    <label for="improvements" class="block text-sm font-medium text-gray-700 mb-1">
+                        Improvements Value ($)
+                        <span class="text-xs text-gray-500 block">(Buildings, structures, etc.)</span>
+                    </label>
+                    <input type="number" id="improvements" placeholder="e.g., 300000" min="0" value="300000"
+                           class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 text-lg">
+                </div>
+                
+                <!-- Tax Rate Input -->
+                <div>
+                    <label for="taxRate" class="block text-sm font-medium text-gray-700 mb-1">
+                        Tax Rate (%)
+                        <span class="text-xs text-gray-500 block">(As a percentage of value)</span>
+                    </label>
+                    <input type="number" id="taxRate" placeholder="e.g., 1.5" min="0" step="0.01" value="1.5"
+                           class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 text-lg">
+                </div>
+            </div>
+
+            <!-- Calculation Button -->
+            <button onclick="calculateTaxes()"
+                    class="w-full py-3 bg-blue-600 text-white font-semibold rounded-lg hover:bg-blue-700 transition duration-150 ease-in-out text-xl focus:outline-none focus:ring-4 focus:ring-blue-500 focus:ring-opacity-50">
+                Calculate Taxes
+            </button>
+            
+            <!-- Error Message -->
+            <p id="error-message" class="text-red-600 mt-4 text-center hidden font-medium">
+                Please enter valid, non-negative numbers for all fields.
+            </p>
+
+            <!-- Results Section -->
+            <div id="results-container" class="mt-8 pt-6 border-t border-gray-200 space-y-4 hidden">
+                <h2 class="text-2xl font-bold text-gray-800 mb-4 text-center">Calculation Results</h2>
+
+                <!-- Total Value Card -->
+                <div class="result-card p-4 bg-gray-50 border-gray-400 rounded-lg">
+                    <p class="text-sm font-medium text-gray-500">Total Property Value (Land + Improvements)</p>
+                    <p id="totalValueOutput" class="text-3xl font-extrabold text-gray-900 mt-1"></p>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    
+                    <!-- Property Tax Card -->
+                    <div class="result-card p-4 bg-red-50 border-red-500 rounded-lg">
+                        <p class="text-sm font-medium text-red-700">Traditional Property Tax Due</p>
+                        <p id="propertyTaxOutput" class="text-3xl font-extrabold text-red-900 mt-1"></p>
+                        <p class="text-xs text-red-600 mt-1">Calculated on Total Property Value</p>
+                    </div>
+
+                    <!-- Land Value Tax Card -->
+                    <div class="result-card p-4 bg-green-50 border-green-500 rounded-lg">
+                        <p class="text-sm font-medium text-green-700">Land Value Tax (LVT) Due</p>
+                        <p id="lvtOutput" class="text-3xl font-extrabold text-green-900 mt-1"></p>
+                        <p class="text-xs text-green-600 mt-1">Calculated only on Land Value</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Global utility for formatting currency
+        const formatter = new Intl.NumberFormat('en-US', {
+            style: 'currency',
+            currency: 'USD',
+            minimumFractionDigits: 0,
+            maximumFractionDigits: 2,
+        });
+
+        function formatCurrency(value) {
+            return formatter.format(value);
+        }
+
+        function calculateTaxes() {
+            // Get raw input values
+            const landValueInput = document.getElementById('landValue').value;
+            const improvementsInput = document.getElementById('improvements').value;
+            const taxRateInput = document.getElementById('taxRate').value;
+
+            // Convert to numbers
+            const landValue = parseFloat(landValueInput);
+            const improvements = parseFloat(improvementsInput);
+            const taxRate = parseFloat(taxRateInput); // This is a percentage (e.g., 1.5)
+
+            // Get output elements
+            const resultsContainer = document.getElementById('results-container');
+            const errorMessage = document.getElementById('error-message');
+
+            // --- 1. Validation ---
+            if (isNaN(landValue) || isNaN(improvements) || isNaN(taxRate) ||
+                landValue < 0 || improvements < 0 || taxRate < 0) {
+                
+                errorMessage.classList.remove('hidden');
+                resultsContainer.classList.add('hidden');
+                return; // Stop execution if inputs are invalid
+            }
+
+            // Hide error message if valid
+            errorMessage.classList.add('hidden');
+
+            // Convert tax rate percentage to a decimal multiplier
+            const taxMultiplier = taxRate / 100;
+
+            // --- 2. Calculations ---
+
+            // A. Total Property Value
+            const totalPropertyValue = landValue + improvements;
+
+            // B. Traditional Property Tax
+            // Tax is applied to the full value (Land + Improvements)
+            const propertyTax = totalPropertyValue * taxMultiplier;
+
+            // C. Land Value Tax (LVT)
+            // Tax is applied only to the Land Value
+            const lvt = landValue * taxMultiplier;
+
+
+            // --- 3. Output Display ---
+            document.getElementById('totalValueOutput').textContent = formatCurrency(totalPropertyValue);
+            document.getElementById('propertyTaxOutput').textContent = formatCurrency(propertyTax);
+            document.getElementById('lvtOutput').textContent = formatCurrency(lvt);
+
+            // Show results container
+            resultsContainer.classList.remove('hidden');
+        }
+
+        // Run calculation once on load with default values
+        window.onload = calculateTaxes;
+    </script>
+</body>
+</html>
